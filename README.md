@@ -31,7 +31,7 @@ or possibly more efficiently:
 
 ```java
 ArrayList<T> elements = new ArrayList();
-while(queue.drainToBlocking(elements)) {
+while(queue.drainToBlocking(elements)>0) {
   ... for each e in elements do ...
   elements.clear();
 }
