@@ -1,7 +1,6 @@
 package robaho.queue;
 
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -11,115 +10,25 @@ import java.util.concurrent.locks.ReentrantLock;
  * are available to readers. Note, only some methods of the Queue interface are implemented.
  * @see java.util.Queue
  */
-public class ClosableQueue<T> implements AutoCloseable {
-    private boolean closed;
-    private final Lock lock  = new ReentrantLock();
+public class ClosableQueue<T> extends AbstractClosableQueue<T> {
+    private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
-    private final LinkedList<T> list = new LinkedList();
-
-    public static class QueueClosedException extends IllegalStateException {
-        private QueueClosedException() {
-            super("queue is closed");
-        }
-    }
 
     @Override
-    /**
-     * Close the queue. Any elements already in the queue are available to subsequent take() operations. Any take() when the
-     * queue is closed will throw an IllegalStateException. Any put() after the queue is closed will also throw an IllegalStateException.
-     */
-    public void close() {
+    protected void lock() {
         lock.lock();
-        try {
-            closed=true;
-            condition.signalAll();
-        } finally {
-            lock.unlock();
-        }
     }
-    /**
-     * check if queue is closed and if so throw QueueClosedException
-     */
-    private void checkClosed() {
-        if(closed) throw new QueueClosedException();
+    @Override
+    protected void unlock() {
+        lock.unlock();
     }
-    /**
-     * Add an element to the queue.
-     * @throws IllegalStateException if the queue is closed.
-     */
-    public void put(T e) {
-        lock.lock();
-        try {
-            checkClosed();
-            list.add(e);
-            condition.signal();
-        } finally {
-            lock.unlock();
-        }
+    @Override
+    protected void wakeupReaders() {
+        condition.signalAll();
     }
-    /**
-     * Add all elements from a Collection to the queue.
-     * @throws IllegalStateException if the queue is closed.
-     */
-    public void putAll(Collection<? extends T> c) {
-        lock.lock();
-        try {
-            checkClosed();
-            list.addAll(c);
-            condition.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-    /**
-     * Remove earliest element from the queue and return it.
-     * @return the element or null if the queue is empty.
-     * @throws IllegalStateException if the queue is closed.
-     */
-    public T poll() {
-        lock.lock();
-        try {
-            checkClosed();
-            return list.poll();
-        } finally {
-            lock.unlock();
-        }
-    }
-    /**
-     * returns the earliest element from the queue but does not remove it.
-     * @return the element or null if the queue is empty.
-     * @throws IllegalStateException if the queue is closed.
-     */
-    public T peek() {
-        lock.lock();
-        try {
-            checkClosed();
-            return list.peek();
-        } finally {
-            lock.unlock();
-        }
-    }
-    /**
-     * returns the earliest element from the queue but does not remove it.
-     * @return the element or null if the queue is empty.
-     * @throws IllegalStateException if the queue is closed.
-     */
-    public T[] toArray(T[] array) {
-        lock.lock();
-        try {
-            checkClosed();
-            return list.toArray(array);
-        } finally {
-            lock.unlock();
-        }
-    }
-    /**
-     * Drain all of the elements of the queue into the provided collection. If the queue is empty, the method returns immediately.
-     * @param c is the non-null Collection to receive the elements.
-     * @throws IllegalStateException if the queue is closed.
-     */
-    public int drainTo(Collection<? super T> c) {
-        return drainTo(c, Integer.MAX_VALUE);
+    @Override
+    protected void wakeupReader() {
+        condition.signal();
     }
 
     /**
@@ -128,26 +37,7 @@ public class ClosableQueue<T> implements AutoCloseable {
      * @param maxElements is the maximum number of elements to drain.
      * @throws IllegalStateException if the queue is closed.
      */
-    public int drainTo(Collection<? super T> c, int maxElements) {
-        lock.lock();
-        try {
-            checkClosed();
-            int count=0;
-            for(T e;(e=list.poll())!=null && count < maxElements;count++) {
-                c.add(e);
-            }
-            return count;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Drain all of the elements of the queue up to maxElements into the provided collection. If the queue is empty, the method returns immediately.
-     * @param c is the non-null Collection to receive the elements.
-     * @param maxElements is the maximum number of elements to drain.
-     * @throws IllegalStateException if the queue is closed.
-     */
+    @Override
     public int drainToBlocking(Collection<? super T> c) throws InterruptedException {
         lock.lock();
         try {
@@ -168,13 +58,13 @@ public class ClosableQueue<T> implements AutoCloseable {
         }
     }
 
-
     /**
      * Remove earliest element from the queue and return it, blocking until an element is available.
      * @return the element.
      * @throws IllegalStateException if the queue is closed while waiting
      * @throws InterruptedException if the thread is interrupted while waiting
      */
+    @Override
     public T take() throws InterruptedException {
         lock.lock();
         try {
