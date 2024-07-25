@@ -2,7 +2,6 @@ package robaho.queue;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -17,6 +16,12 @@ public class ClosableQueue<T> implements AutoCloseable {
     private final Lock lock  = new ReentrantLock();
     private final Condition condition = lock.newCondition();
     private final LinkedList<T> list = new LinkedList();
+
+    public static class QueueClosedException extends IllegalStateException {
+        private QueueClosedException() {
+            super("queue is closed");
+        }
+    }
 
     @Override
     /**
@@ -33,13 +38,19 @@ public class ClosableQueue<T> implements AutoCloseable {
         }
     }
     /**
+     * check if queue is closed and if so throw QueueClosedException
+     */
+    private void checkClosed() {
+        if(closed) throw new QueueClosedException();
+    }
+    /**
      * Add an element to the queue.
      * @throws IllegalStateException if the queue is closed.
      */
     public void put(T e) {
         lock.lock();
         try {
-            if(closed) throw new IllegalStateException("queue is closed");
+            checkClosed();
             list.add(e);
             condition.signal();
         } finally {
@@ -53,7 +64,7 @@ public class ClosableQueue<T> implements AutoCloseable {
     public void putAll(Collection<? extends T> c) {
         lock.lock();
         try {
-            if(closed) throw new IllegalStateException("queue is closed");
+            checkClosed();
             list.addAll(c);
             condition.signal();
         } finally {
@@ -68,7 +79,7 @@ public class ClosableQueue<T> implements AutoCloseable {
     public T poll() {
         lock.lock();
         try {
-            if(closed) throw new IllegalStateException("queue is closed");
+            checkClosed();
             return list.poll();
         } finally {
             lock.unlock();
@@ -82,7 +93,7 @@ public class ClosableQueue<T> implements AutoCloseable {
     public T peek() {
         lock.lock();
         try {
-            if(closed) throw new IllegalStateException("queue is closed");
+            checkClosed();
             return list.peek();
         } finally {
             lock.unlock();
@@ -96,7 +107,7 @@ public class ClosableQueue<T> implements AutoCloseable {
     public T[] toArray(T[] array) {
         lock.lock();
         try {
-            if(closed) throw new IllegalStateException("queue is closed");
+            checkClosed();
             return list.toArray(array);
         } finally {
             lock.unlock();
@@ -120,7 +131,7 @@ public class ClosableQueue<T> implements AutoCloseable {
     public int drainTo(Collection<? super T> c, int maxElements) {
         lock.lock();
         try {
-            if(closed) throw new IllegalStateException("queue is closed");
+            checkClosed();
             int count=0;
             for(T e;(e=list.poll())!=null && count < maxElements;count++) {
                 c.add(e);
@@ -141,7 +152,7 @@ public class ClosableQueue<T> implements AutoCloseable {
         lock.lock();
         try {
             while (true) { 
-                if(closed) throw new IllegalStateException("queue is closed");
+                checkClosed();
                 if(list.isEmpty()) {
                     condition.await();
                 } else {
@@ -170,7 +181,7 @@ public class ClosableQueue<T> implements AutoCloseable {
             while(true) {
                 T t = list.poll();
                 if(t!=null) return t;
-                if(closed) throw new IllegalStateException("queue is closed");
+                checkClosed();
                 condition.await();
             }
         } finally {
