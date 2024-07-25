@@ -47,6 +47,20 @@ public class ClosableQueue<T> implements AutoCloseable {
         }
     }
     /**
+     * Add all elements from a Collection to the queue.
+     * @throws IllegalStateException if the queue is closed.
+     */
+    public void putAll(Collection<? extends T> c) {
+        lock.lock();
+        try {
+            if(closed) throw new IllegalStateException("queue is closed");
+            list.addAll(c);
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+    /**
      * Remove earliest element from the queue and return it.
      * @return the element or null if the queue is empty.
      * @throws IllegalStateException if the queue is closed.
