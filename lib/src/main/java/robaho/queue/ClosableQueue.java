@@ -88,7 +88,7 @@ public class ClosableQueue<T> implements AutoCloseable {
         }
     }
     /**
-     * Drain all of the elements of the queue into the provided collection.
+     * Drain all of the elements of the queue into the provided collection. If the queue is empty, the method returns immediately.
      * @param c is the non-null Collection to receive the elements.
      * @throws IllegalStateException if the queue is closed.
      */
@@ -97,7 +97,7 @@ public class ClosableQueue<T> implements AutoCloseable {
     }
 
     /**
-     * Drain all of the elements of the queue up to maxElements into the provided collection.
+     * Drain all of the elements of the queue up to maxElements into the provided collection. If the queue is empty, the method returns immediately.
      * @param c is the non-null Collection to receive the elements.
      * @param maxElements is the maximum number of elements to drain.
      * @throws IllegalStateException if the queue is closed.
