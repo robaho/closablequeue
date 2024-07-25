@@ -18,6 +18,10 @@ public class ClosableQueue<T> implements AutoCloseable {
     private final LinkedList<T> list = new LinkedList();
 
     @Override
+    /**
+     * Close the queue. Any elements already in the queue are available to subsequent take() operations. Any take() when the
+     * queue is closed will throw an IllegalStateException. Any put() after the queue is closed will also throw an IllegalStateException.
+     */
     public void close() {
         lock.lock();
         try {
