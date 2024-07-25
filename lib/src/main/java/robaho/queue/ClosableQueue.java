@@ -1,5 +1,6 @@
 package robaho.queue;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -54,6 +55,63 @@ public class ClosableQueue<T> implements AutoCloseable {
             lock.unlock();
         }
     }
+    /**
+     * returns the earliest element from the queue but does not remove it.
+     * @return the element or null if the queue is empty.
+     * @throws IllegalStateException if the queue is closed.
+     */
+    public T peek() {
+        lock.lock();
+        try {
+            if(closed) throw new IllegalStateException("queue is closed");
+            return list.peek();
+        } finally {
+            lock.unlock();
+        }
+    }
+    /**
+     * returns the earliest element from the queue but does not remove it.
+     * @return the element or null if the queue is empty.
+     * @throws IllegalStateException if the queue is closed.
+     */
+    public T[] toArray(T[] array) {
+        lock.lock();
+        try {
+            if(closed) throw new IllegalStateException("queue is closed");
+            return list.toArray(array);
+        } finally {
+            lock.unlock();
+        }
+    }
+    /**
+     * Drain all of the elements of the queue into the provided collection.
+     * @param c is the non-null Collection to receive the elements.
+     * @throws IllegalStateException if the queue is closed.
+     */
+    public int drainTo(Collection<? super T> c) {
+        return drainTo(c, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Drain all of the elements of the queue up to maxElements into the provided collection.
+     * @param c is the non-null Collection to receive the elements.
+     * @param maxElements is the maximum number of elements to drain.
+     * @throws IllegalStateException if the queue is closed.
+     */
+    public int drainTo(Collection<? super T> c, int maxElements) {
+        lock.lock();
+        try {
+            if(closed) throw new IllegalStateException("queue is closed");
+            int count=0;
+            for(T e;(e=list.poll())!=null && count < maxElements;count++) {
+                c.add(e);
+            }
+            return count;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     /**
      * Remove earliest element from the queue and return it, blocking until an element is available.
      * @return the element.

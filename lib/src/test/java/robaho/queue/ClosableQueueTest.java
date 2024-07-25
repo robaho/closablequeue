@@ -4,6 +4,7 @@
 package robaho.queue;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -80,5 +81,27 @@ class ClosableQueueTest {
         Thread.sleep(Duration.ofSeconds(1));
         queue.close();
         assertTrue(t.join(Duration.ofSeconds(5)));
+    }
+    @Test void drainQueue() throws InterruptedException {
+        ClosableQueue<Integer> queue = new ClosableQueue();
+        ArrayList<Integer> list = new ArrayList();
+        queue.put(1);
+        queue.put(2);
+        queue.put(3);
+        queue.drainTo(list);
+        assertEquals(1,list.get(0));
+        assertEquals(2,list.get(1));
+        assertEquals(3,list.get(2));
+    }
+    @Test void drainQueueMaxElements() throws InterruptedException {
+        ClosableQueue<Integer> queue = new ClosableQueue();
+        ArrayList<Integer> list = new ArrayList();
+        queue.put(1);
+        queue.put(2);
+        queue.put(3);
+        queue.drainTo(list,2);
+        assertEquals(2,list.size());
+        assertEquals(1,list.get(0));
+        assertEquals(2,list.get(1));
     }
 }
