@@ -45,9 +45,11 @@ See [ClosableQueue](lib/src/main/java/robaho/queue/ClosableQueue.java)
 
 The library also includes a highly efficient closable queue specifically designed for the case of a single active reader - which is expected to be most of time when using ephemeral virtual thread queues.
 
+```java
 try(var queue=new SingleConsumerQueue<T>()) {
    Thread.startVirtualThread(newConsumer(queue));
   ... put() items into queue from source/generation ...
 }
+```
 
 See [SingleConsumerQueue](lib/src/main/java/robaho/queue/SingleConsumerQueue.java)
