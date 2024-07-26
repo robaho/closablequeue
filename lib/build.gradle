@@ -8,6 +8,7 @@
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
+    id "me.champeau.jmh" version "0.7.2"
 }
 
 repositories {
@@ -20,6 +21,7 @@ dependencies {
     testImplementation libs.junit.jupiter
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.openjdk.jmh:jmh-core:1.37'
 
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     api libs.commons.math3
