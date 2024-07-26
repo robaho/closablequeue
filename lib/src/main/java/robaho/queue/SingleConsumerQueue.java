@@ -9,14 +9,15 @@ import java.util.concurrent.locks.LockSupport;
  * an unbounded FIFO queue with "close" semantics. For efficiency, it only supports a single reader. This queue is designed for virtual thread hand-off type scenarios.
  */
 public class SingleConsumerQueue<T> extends AbstractClosableQueue<T> {
-    private AtomicReference<Thread> waiter = new AtomicReference<>();
+    private final AtomicReference<Thread> waiter = new AtomicReference<>();
     // since the queue is unbounded a spin lock works
-    private SpinLock lock = new SpinLock();
+    private final SpinLock lock = new SpinLock();
+    static final int SPIN_WAITS       = 1 <<  7;   // max calls to onSpinWait
 
     private static class SpinLock {
         private final AtomicBoolean lock = new AtomicBoolean();
         public void lock() {
-            while(!lock.compareAndSet(false,true)){}
+            while(!lock.compareAndSet(false,true)){Thread.onSpinWait();}
         }
         public void unlock() {
             lock.set(false);
