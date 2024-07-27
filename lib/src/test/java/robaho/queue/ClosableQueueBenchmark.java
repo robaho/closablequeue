@@ -93,5 +93,25 @@ public class ClosableQueueBenchmark {
         }
         thread.join();
     }
+    @Benchmark
+    @OperationsPerInvocation(1000000)
+    public void testLinkedTransferQueueUsingTransfer() throws InterruptedException {
+        var queue = new LinkedTransferQueue<Integer>();
+        var thread = Thread.startVirtualThread(() -> {
+            try {
+                int count=0;
+                while(true) {
+                    queue.take();
+                    if(++count==1000000) return;
+                }
+            } catch (InterruptedException ex) {
+                throw new Error("unexpected interrupt");
+            }
+        });
+        for(int i=0;i<1000000;i++) {
+            queue.transfer(i);
+        }
+        thread.join();
+    }
 
 }
