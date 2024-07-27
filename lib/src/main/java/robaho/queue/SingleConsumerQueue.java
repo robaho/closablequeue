@@ -84,6 +84,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T> {
     public T take() throws InterruptedException {
         if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
+            int waits=0;
             while (true) { 
                 lock.lock();
                 try {
@@ -93,6 +94,8 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T> {
                 } finally {
                     lock.unlock();
                 }
+                if(++waits<SPIN_WAITS) continue;
+                waits=0;
                 LockSupport.park(lock);
             }
         } finally {
