@@ -35,7 +35,7 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
      * Drain all of the elements of the queue up to maxElements into the provided collection. If the queue is empty, the method returns immediately.
      * @param c is the non-null Collection to receive the elements.
      * @param maxElements is the maximum number of elements to drain.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     @Override
     public int drainToBlocking(Collection<? super T> c) throws InterruptedException {
@@ -61,7 +61,7 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
     /**
      * Remove earliest element from the queue and return it, blocking until an element is available.
      * @return the element.
-     * @throws IllegalStateException if the queue is closed while waiting
+     * @throws QueueClosedException if the queue is closed while waiting
      * @throws InterruptedException if the thread is interrupted while waiting
      */
     @Override

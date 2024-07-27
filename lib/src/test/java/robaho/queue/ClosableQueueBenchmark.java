@@ -1,6 +1,7 @@
 package robaho.queue;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
@@ -14,7 +15,7 @@ import org.openjdk.jmh.annotations.*;
 public class ClosableQueueBenchmark {
     @Benchmark
     @OperationsPerInvocation(1000000)
-    public void testQueue() throws InterruptedException {
+    public void testClosableQueue() throws InterruptedException {
         var queue = new ClosableQueue<Integer>();
         var thread = Thread.startVirtualThread(() -> {
             try {
@@ -22,6 +23,7 @@ public class ClosableQueueBenchmark {
                     queue.take();
                 }
             } catch (InterruptedException ex) {
+                throw new Error("unexpected interrupt");
             }
         });
         for(int i=0;i<1000000;i++) {
@@ -35,19 +37,22 @@ public class ClosableQueueBenchmark {
     public void testSingleConsumerQueue() throws InterruptedException {
         var queue = new SingleConsumerQueue<Integer>();
         var thread = Thread.startVirtualThread(() -> {
-            try {
-                while(true) {
-                    queue.take();
+                try {
+                    while(true) {
+                        queue.take();
+                    }
+                } catch (InterruptedException ex) {
+                    throw new Error("unexpected interrupt");
                 }
-            } catch (InterruptedException ex) {
-            }
-        });
+            }); 
+            
         for(int i=0;i<1000000;i++) {
             queue.put(i);
         }
         queue.close();
         thread.join();
     }
+
     @Benchmark
     @OperationsPerInvocation(1000000)
     public void testLinkedBlockingQueue() throws InterruptedException {
@@ -60,6 +65,27 @@ public class ClosableQueueBenchmark {
                     if(++count==1000000) return;
                 }
             } catch (InterruptedException ex) {
+                throw new Error("unexpected interrupt");
+            }
+        });
+        for(int i=0;i<1000000;i++) {
+            queue.put(i);
+        }
+        thread.join();
+    }
+    @Benchmark
+    @OperationsPerInvocation(1000000)
+    public void testLinkedTransferQueue() throws InterruptedException {
+        var queue = new LinkedTransferQueue<Integer>();
+        var thread = Thread.startVirtualThread(() -> {
+            try {
+                int count=0;
+                while(true) {
+                    queue.take();
+                    if(++count==1000000) return;
+                }
+            } catch (InterruptedException ex) {
+                throw new Error("unexpected interrupt");
             }
         });
         for(int i=0;i<1000000;i++) {

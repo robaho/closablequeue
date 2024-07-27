@@ -31,7 +31,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
     }
     /**
      * Add an element to the queue.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public void put(T e) {
         lock();
@@ -45,7 +45,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
     }
     /**
      * Add all elements from a Collection to the queue.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public void putAll(Collection<? extends T> c) {
         lock();
@@ -60,7 +60,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
     /**
      * Remove earliest element from the queue and return it.
      * @return the element or null if the queue is empty.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public T poll() {
         lock();
@@ -74,7 +74,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
     /**
      * returns the earliest element from the queue but does not remove it.
      * @return the element or null if the queue is empty.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public T peek() {
         lock();
@@ -88,7 +88,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
     /**
      * returns the earliest element from the queue but does not remove it.
      * @return the element or null if the queue is empty.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public T[] toArray(T[] array) {
         lock();
@@ -102,7 +102,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
     /**
      * Drain all of the elements of the queue into the provided collection. If the queue is empty, the method returns immediately.
      * @param c is the non-null Collection to receive the elements.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public int drainTo(Collection<? super T> c) {
         return drainTo(c, Integer.MAX_VALUE);
@@ -112,7 +112,7 @@ public abstract class AbstractClosableQueue<T> implements AutoCloseable {
      * Drain all of the elements of the queue up to maxElements into the provided collection. If the queue is empty, the method returns immediately.
      * @param c is the non-null Collection to receive the elements.
      * @param maxElements is the maximum number of elements to drain.
-     * @throws IllegalStateException if the queue is closed.
+     * @throws QueueClosedException if the queue is closed.
      */
     public int drainTo(Collection<? super T> c, int maxElements) {
         lock();

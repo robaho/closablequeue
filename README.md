@@ -53,3 +53,20 @@ try(var queue=new SingleConsumerQueue<T>()) {
 ```
 
 See [SingleConsumerQueue](lib/src/main/java/robaho/queue/SingleConsumerQueue.java)
+
+## performance
+
+There are jmh benchmarks that test against the standard concurrent queues:
+
+```
+
+Benchmark                                       Mode  Cnt    Score    Error  Units
+ClosableQueueBenchmark.testClosableQueue        avgt    9  184.765 ± 16.672  ns/op
+ClosableQueueBenchmark.testLinkedBlockingQueue  avgt    9  151.946 ±  6.779  ns/op
+ClosableQueueBenchmark.testLinkedTransferQueue  avgt    9   60.835 ±  1.226  ns/op
+ClosableQueueBenchmark.testSingleConsumerQueue  avgt    9  119.161 ± 19.721  ns/op
+```
+
+## todo
+
+Investigate SingleConsumerQueue performance to match LinkedTransferQueue.
