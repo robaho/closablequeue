@@ -3,12 +3,6 @@ package robaho.queue;
 import java.util.Collection;
 
 public abstract class AbstractClosableQueue<T> implements AutoCloseable {
-    public static class QueueClosedException extends IllegalStateException {
-        QueueClosedException() {
-            super("queue is closed");
-        }
-    }
-
     /**
      * Close the queue. Any further put() operations after which will fail with an IllegalStateException.
      * Any read operations will succeed until the queue is empty, after which a QueueClosedException will be thrown.

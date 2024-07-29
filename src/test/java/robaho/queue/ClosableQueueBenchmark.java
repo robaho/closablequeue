@@ -24,6 +24,7 @@ public class ClosableQueueBenchmark {
                 }
             } catch (InterruptedException ex) {
                 throw new Error("unexpected interrupt");
+            } catch (QueueClosedException expected) {
             }
         });
         for(int i=0;i<1000000;i++) {
@@ -43,6 +44,7 @@ public class ClosableQueueBenchmark {
                     }
                 } catch (InterruptedException ex) {
                     throw new Error("unexpected interrupt");
+                } catch (QueueClosedException expected) {
                 }
             }); 
             
