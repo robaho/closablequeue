@@ -43,5 +43,5 @@ tasks.named('test') {
 }
 
 jmh {
-    includes = [ "testSingleConsumerQueue" ]
+    // includes = [ "testSingleConsumerQueue" ]
 }

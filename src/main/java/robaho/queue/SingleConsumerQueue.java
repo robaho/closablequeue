@@ -10,14 +10,14 @@ import java.util.concurrent.locks.LockSupport;
 public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
     private final AtomicReference<Thread> waiter = new AtomicReference<>();
     private static class Node<T> {
-        final T element;
+        T element;
         volatile Node next;
         Node(T element) {
             this.element=element;
         }
     }
-    private final AtomicReference<Node<T>> tail = new AtomicReference();
-    private final AtomicReference<Node<T>> head = new AtomicReference();
+    private final AtomicReference<Node<T>> tail = new AtomicReference(new Node(null));
+    private Node<T> head = tail.get();
 
     private static final int SPIN_WAITS       = 1 <<  7;   // max calls to onSpinWait
     private static final Node CLOSED = new Node(null);
@@ -29,10 +29,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
             Node _tail = tail.get();
             if(_tail==CLOSED) throw new QueueClosedException();
             if(tail.compareAndSet(_tail,node)) {
-                if(_tail!=null) {
-                    _tail.next=node;
-                }
-                head.compareAndSet(null,node);
+                _tail.next=node;
                 LockSupport.unpark(waiter.get());
                 return;
             } else {
@@ -52,13 +49,18 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
     public T poll() {
         if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
-            var _head = head.get();
-            if(_head==CLOSED) throw new QueueClosedException();
-            if(_head!=null) {
-                head.set(_head.next);
-                return _head.element;
-            } else {
-                return null;
+            for (;;) {
+                if(head==CLOSED) throw new QueueClosedException();
+                if(head.element!=null) {
+                    T element = head.element;
+                    head.element = null;
+                    if(head.next!=null) head = head.next;
+                    return element;
+                } else if(head.next!=null) {
+                    head = head.next;
+                } else {
+                    return null;
+                }
             }
         } finally {
             waiter.set(null);
@@ -74,12 +76,15 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
     public T peek() {
         if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
-            var _head = head.get();
-            if(_head==CLOSED) throw new QueueClosedException();
-            if(_head!=null) {
-                return _head.element;
-            } else {
-                return null;
+            var _head = head;
+            for (;;) {
+                if(_head==CLOSED) throw new QueueClosedException();
+                if(_head.element!=null) return head.element;
+                if(_head.next!=null) {
+                    _head = _head.next;
+                } else {
+                    return null;
+                }
             }
         } finally {
             waiter.set(null);
@@ -111,7 +116,6 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
                 if(_tail!=null){
                     _tail.next=CLOSED;
                 }
-                head.compareAndSet(null,CLOSED);
                 LockSupport.unpark(waiter.get());
                 return;
             }
@@ -133,12 +137,15 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
         if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
             int waits=0;
-            while (true) { 
-                var _head = head.get();
-                if(_head==CLOSED) throw new QueueClosedException();
-                if(_head!=null) {
-                    head.set(_head.next);
-                    return _head.element;
+            while (true) {
+                if(head==CLOSED) throw new QueueClosedException();
+                if(head.element!=null) {
+                    T element = head.element;
+                    head.element = null;
+                    if(head.next!=null) head = head.next;
+                    return element;
+                } else {
+                    if(head.next!=null) head = head.next;
                 }
                 if(++waits<SPIN_WAITS) {
                     Thread.onSpinWait();

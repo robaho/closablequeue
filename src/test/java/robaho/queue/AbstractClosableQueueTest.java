@@ -35,6 +35,8 @@ abstract class AbstractClosableQueueTest {
                         count.incrementAndGet();
                     } catch (InterruptedException ex) {
                         return;
+                    } catch(QueueClosedException expected) {
+                        return;
                     }
                 }
             });
@@ -70,6 +72,8 @@ abstract class AbstractClosableQueueTest {
                         }
                         queue.take();
                     } catch (InterruptedException ex) {
+                        return;
+                    } catch(QueueClosedException expected) {
                         return;
                     }
                 }
