@@ -143,8 +143,10 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
                     head.element = null;
                     if(head.next!=null) head = head.next;
                     return element;
-                } else {
-                    if(head.next!=null) head = head.next;
+                }
+                if(head.next!=null) {
+                    head = head.next;
+                    continue;
                 }
                 if(++waits<SPIN_WAITS) {
                     Thread.onSpinWait();
