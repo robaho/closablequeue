@@ -1,14 +1,15 @@
 package robaho.queue;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
  * an unbounded FIFO queue with "close" semantics. For efficiency, it only supports a single reader. This queue is designed for virtual thread hand-off type scenarios.
  */
 public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
-    private final AtomicReference<Thread> waiter = new AtomicReference<>();
+    private volatile Thread waiter = null;
     private static class Node<T> {
         T element;
         volatile Node next;
@@ -16,8 +17,8 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
             this.element=element;
         }
     }
-    private final AtomicReference<Node<T>> tail = new AtomicReference(new Node(null));
-    private Node<T> head = tail.get();
+    private volatile Node<T> tail = new Node(null);
+    private Node<T> head = tail;
 
     private static final int SPIN_WAITS       = 1 <<  7;   // max calls to onSpinWait
     private static final Node CLOSED = new Node(null);
@@ -26,11 +27,11 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
     public void put(T e) {
         Node node = new Node(e);
         while(true) {
-            Node _tail = tail.get();
+            Node _tail = tail;
             if(_tail==CLOSED) throw new QueueClosedException();
-            if(tail.compareAndSet(_tail,node)) {
+            if(TAIL.compareAndSet(this,_tail,node)) {
                 _tail.next=node;
-                LockSupport.unpark(waiter.get());
+                LockSupport.unpark(waiter);
                 return;
             } else {
                 Thread.onSpinWait();
@@ -47,7 +48,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
 
     @Override
     public T poll() {
-        if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
+        if(!WAITER.compareAndSet(this,null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
             for (;;) {
                 if(head==CLOSED) throw new QueueClosedException();
@@ -63,7 +64,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
                 }
             }
         } finally {
-            waiter.set(null);
+            waiter=null;
         }
     }
 
@@ -74,7 +75,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
      */
     @Override
     public T peek() {
-        if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
+        if(!WAITER.compareAndSet(this,null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
             var _head = head;
             for (;;) {
@@ -87,7 +88,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
                 }
             }
         } finally {
-            waiter.set(null);
+            waiter=null;
         }
     }
     /**
@@ -110,13 +111,11 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
     @Override
     public void close() {
         while(true) {
-            Node _tail = tail.get();
+            Node _tail = tail;
             if(_tail==CLOSED) return;
-            if(tail.compareAndSet(_tail,CLOSED)) {
-                if(_tail!=null){
-                    _tail.next=CLOSED;
-                }
-                LockSupport.unpark(waiter.get());
+            if(TAIL.compareAndSet(this,_tail,CLOSED)) {
+                _tail.next=CLOSED;
+                LockSupport.unpark(waiter);
                 return;
             }
         }
@@ -134,7 +133,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
     }
     @Override
     public T take() throws InterruptedException {
-        if(!waiter.compareAndSet(null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
+        if(!WAITER.compareAndSet(this,null,Thread.currentThread())) throw new IllegalStateException("queue has an active reader");
         try {
             int waits=0;
             while (true) {
@@ -155,7 +154,21 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
                 LockSupport.park(this);
             }
         } finally {
-            waiter.set(null);
+            waiter=null;
         }
     }
+
+    // VarHandle mechanics
+    private static final VarHandle TAIL;
+    private static final VarHandle WAITER;
+    static {
+        try {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            TAIL = l.findVarHandle(SingleConsumerQueue.class, "tail",Node.class);
+            WAITER = l.findVarHandle(SingleConsumerQueue.class, "waiter", Thread.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
 }
