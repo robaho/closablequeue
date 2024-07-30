@@ -47,6 +47,8 @@ jmh {
     // includes = [ "testSingleConsumerQueue" ]
 }
 
+group = 'robaho.queue'
+
 publishing {
     repositories {
         maven {
