@@ -48,7 +48,7 @@ jmh {
 }
 
 group = 'robaho.queue'
-version = '${{ github.ref_name }}'
+version = System.getenv("RELEASE_VERSION")
 
 publishing {
     repositories {
