@@ -48,7 +48,7 @@ jmh {
 }
 
 group = 'robaho.queue'
-version = '1.0.5'
+version = '${{ github.ref_name }}'
 
 publishing {
     repositories {
