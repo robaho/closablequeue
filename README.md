@@ -37,7 +37,7 @@ while(queue.drainToBlocking(elements)>0) {
 }
 ```
 
-The `take()` in consumer will throw an `IllegalStateException` if the producer closes the queue and all elements from the queue have been processed.
+The `take()` in consumer will throw an `QueueClosedException` if the queue is closed and all elements from the queue have been processed (i.e. queue is empty and closed).
 
 See [ClosableQueue](lib/src/main/java/robaho/queue/ClosableQueue.java)
 
