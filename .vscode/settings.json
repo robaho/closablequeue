@@ -1,0 +1,3 @@
+{
+    "jdk.runConfig.vmOptions": "-Djdk.trackAllThreads=false"
+}
