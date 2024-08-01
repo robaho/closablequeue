@@ -1,4 +1,4 @@
-This is a simple unbounded FIFO queue that offers "close" semantics.
+This is a unbounded FIFO queue that offers "close" semantics.
 
 It is designed to be used with try-with-resources and ephemeral virtual threads to ensure proper clean-up of threads.
 
@@ -37,7 +37,9 @@ while(queue.drainToBlocking(elements)>0) {
 }
 ```
 
-The `take()` in consumer will throw an `IllegalStateException` if the producer closes the queue and all elements from the queue have been processed.
+The `take()` in consumer will throw an `QueueClosedException` (subclass of `IllegalStateException`) if the queue is closed and all elements from the queue have been processed (i.e. queue is empty and closed).
+
+Multiple producers and consumers are supported. Once the queue is closed, any `put()` related methods will fail with a `QueueClosedException`.
 
 See [ClosableQueue](lib/src/main/java/robaho/queue/ClosableQueue.java)
 
