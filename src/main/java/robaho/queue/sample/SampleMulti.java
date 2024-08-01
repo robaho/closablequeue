@@ -85,11 +85,10 @@ public class SampleMulti {
                 System.out.println(ts() + " Consumer " + name + ": message received");
                 if(counter++>2) ps.kill();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (InterruptedException shouldNotHappen) {
+            shouldNotHappen.printStackTrace();
         } catch (QueueClosedException expected) {
             System.out.println(ts() + " Consumer "+name+" ended");
-            // our queue has been closed
         }
     }
 
