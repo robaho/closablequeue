@@ -3,6 +3,9 @@ package robaho.queue.sample;
 import robaho.queue.QueueClosedException;
 import robaho.queue.SingleConsumerQueue;
 
+/**
+ * single producer/consumer without leaking consumer threads
+ */
 public class SampleCorrect {
 
     private static final long start = System.currentTimeMillis();
