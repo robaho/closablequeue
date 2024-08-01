@@ -60,6 +60,7 @@ public class SampleMulti {
                 }
             }
             queue.close();
+            // closing the queue will cause the consumer to exit, so wait for it to finish
             try {
                 consumer.join();
             } catch (InterruptedException ignored) {
