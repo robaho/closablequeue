@@ -7,7 +7,8 @@ import robaho.queue.QueueClosedException;
 import robaho.queue.SingleConsumerQueue;
 
 /**
- * this is a sample that has multiple producers, and the consumer initiates the close
+ * this is a sample that has multiple producers, and the consumer initiates the close. it uses thread interrupt to signal the producers - which
+ * is not suitable for production systems. Most likely a volatile boolean in the producer should be set and polled on iteration.
  */
 public class SampleMulti {
 
