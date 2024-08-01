@@ -79,14 +79,15 @@ public class SampleMulti {
         }
     }
 
-    // close the shop after second message received
+    // close the shop after the fourth message received
     private static void consumer(ProducerSet ps,String name,SingleConsumerQueue q) {
         try {
             int counter=0;
             while (true) {
                 q.take();
                 System.out.println(ts() + " Consumer " + name + ": message received");
-                if(counter++>2) ps.kill();
+                // demonstrate the shutdown from the consumer (or any external actor)
+                if(++counter>=4) ps.kill();
             }
         } catch (InterruptedException shouldNotHappen) {
             shouldNotHappen.printStackTrace();
