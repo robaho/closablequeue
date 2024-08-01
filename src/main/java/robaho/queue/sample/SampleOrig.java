@@ -3,6 +3,9 @@ package robaho.queue.sample;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * producer/consumer that relies on the VT auto-cleanup
+ */
 public class SampleOrig {
 
     private static volatile BlockingQueue queue;
@@ -49,6 +52,8 @@ public class SampleOrig {
         try {
             int counter = 0;
             while (true) {
+                // the following line is the "magic"... if q is no longer referenced by elsewhere this
+                // thread will disappear during the take() and any resources used released
                 q.take();
                 counter++;
                 System.out.println(ts() + " Consumer " + name + ": message received");
@@ -59,6 +64,9 @@ public class SampleOrig {
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            // the following will never be printed
+            System.out.println("consumer ended");
         }
     }
 
