@@ -32,13 +32,14 @@ public class SampleMulti {
         private final Set<Thread> producers = new HashSet();
         private final String name = ts();
         private volatile boolean killed;
+        private final Thread consumer;
 
         public ProducerSet() {
             for(int i=0;i<3;i++) {
                 String producerName = name+"."+i;
                 producers.add(Thread.startVirtualThread(() -> producer(producerName,queue)));
             }
-            Thread.startVirtualThread(() -> consumer(this,name,queue));
+            consumer = Thread.startVirtualThread(() -> consumer(this,name,queue));
         }
         public void kill() {
             killed=true;
@@ -56,6 +57,10 @@ public class SampleMulti {
                 }
             }
             queue.close();
+            try {
+                consumer.join();
+            } catch (InterruptedException ignored) {
+            }
             return false;
         }
     }
