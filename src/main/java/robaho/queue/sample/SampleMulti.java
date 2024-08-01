@@ -7,7 +7,7 @@ import robaho.queue.QueueClosedException;
 import robaho.queue.SingleConsumerQueue;
 
 /**
- * this is a sample that has multiple producers, and the consumer initiates the close (not the preferred)
+ * this is a sample that has multiple producers, and the consumer initiates the close
  */
 public class SampleMulti {
 
