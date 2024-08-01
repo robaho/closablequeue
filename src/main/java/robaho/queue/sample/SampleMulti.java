@@ -18,8 +18,7 @@ public class SampleMulti {
     private static void producer(String name,SingleConsumerQueue queue) {
         try {
             while (!Thread.interrupted()) { 
-                sleep(2_000);
-                if(Thread.interrupted()) return;
+                if(sleep(2_000)) return;
                 System.out.println(ts() + " Producer: "+name+" enqueued message");
                 queue.put("message");
             }
@@ -89,10 +88,13 @@ public class SampleMulti {
         }
     }
 
-    private static void sleep(long millis) {
+    // return true if interrupted
+    private static boolean sleep(long millis) {
         try {
             Thread.sleep(millis);
+            return false;
         } catch (InterruptedException e) {
+            return true;
         }
     }
 
