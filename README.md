@@ -68,3 +68,13 @@ ClosableQueueBenchmark.testLinkedBlockingQueue               avgt    9   168.452
 ClosableQueueBenchmark.testLinkedTransferQueue               avgt    9    64.612 ±   0.924  ns/op
 ClosableQueueBenchmark.testLinkedTransferQueueUsingTransfer  avgt    9  1687.000 ± 496.429  ns/op
 ```
+
+## maven
+
+```xml
+<dependency>
+  <groupId>io.github.robaho</groupId>
+  <artifactId>closablequeue</artifactId>
+  <version>1.0.8</version>
+</dependency>
+```

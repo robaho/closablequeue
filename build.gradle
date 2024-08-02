@@ -39,25 +39,66 @@ tasks.named('test') {
 
 jmh {
     // includes = [ "testSingleConsumerQueue" ]
+    // includes = [ "testClosableQueue" ]
 }
 
 group = 'robaho.queue'
-version = System.getenv("RELEASE_VERSION")
+version = '1.0.8'
+
+publish {
+    dependsOn test
+    dependsOn testMainsTest
+}
 
 publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/robaho/closablequeue")
-            credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
-                password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+    publications {
+        maven(MavenPublication) {
+            groupId = 'io.github.robaho'
+            artifactId = 'closablequeue'
+            version = $version
+
+            from components.java
+
+            pom {
+                name = 'closablequeue'
+                description = 'An unbounded FIFO queue with "close" semantics designed for ephemeral virtual threads.'
+
+                signing {
+                    sign publishing.publications.maven
+                    sign configurations.archives
+                }
+
+                url = 'https://github.com/robaho/closablequeue'
+
+                scm {
+                    url = 'https://github.com/robaho/closablequeue.git'
+                }
+
+                licenses {
+                    license {
+                        name = 'gnu v2.0'
+                        url = 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.html'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'robaho'
+                        name = 'Robert Engels'
+                        email = 'robaho@me.com'
+                    }
+                }
             }
         }
     }
-    publications {
-        gpr(MavenPublication) {
-            from(components.java)
+    repositories {
+        maven {
+        name = "OSSRH"
+        url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = "$maven_user"
+                password = "$maven_password"
+            }            
         }
     }
 }
