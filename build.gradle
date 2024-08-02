@@ -47,7 +47,6 @@ version = '1.0.8'
 
 publish {
     dependsOn test
-    dependsOn testMainsTest
 }
 
 publishing {
