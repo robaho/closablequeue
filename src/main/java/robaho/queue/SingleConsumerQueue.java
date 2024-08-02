@@ -31,7 +31,7 @@ public class SingleConsumerQueue<T> extends AbstractClosableQueue<T>{
             if(_tail==CLOSED) throw new QueueClosedException();
             if(TAIL.compareAndSet(this,_tail,node)) {
                 _tail.next=node;
-                LockSupport.unpark(waiter);
+                if(head==_tail) LockSupport.unpark(waiter);
                 return;
             } else {
                 Thread.onSpinWait();

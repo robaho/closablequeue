@@ -62,13 +62,9 @@ There are jmh benchmarks that test against the standard concurrent queues:
 
 ```
 Benchmark                                                    Mode  Cnt     Score     Error  Units
-ClosableQueueBenchmark.testClosableQueue                     avgt    9   193.844 ±  10.781  ns/op
-ClosableQueueBenchmark.testSingleConsumerQueue               avgt    9    83.570 ±   1.252  ns/op
-ClosableQueueBenchmark.testLinkedBlockingQueue               avgt    9   154.204 ±   8.674  ns/op
-ClosableQueueBenchmark.testLinkedTransferQueue               avgt    9    60.778 ±   1.202  ns/op
-ClosableQueueBenchmark.testLinkedTransferQueueUsingTransfer  avgt    9  2146.786 ± 641.147  ns/op
+ClosableQueueBenchmark.testClosableQueue                     avgt    9   142.820 ±  11.575  ns/op
+ClosableQueueBenchmark.testSingleConsumerQueue               avgt    9    71.104 ±   2.867  ns/op
+ClosableQueueBenchmark.testLinkedBlockingQueue               avgt    9   168.452 ±  11.434  ns/op
+ClosableQueueBenchmark.testLinkedTransferQueue               avgt    9    64.612 ±   0.924  ns/op
+ClosableQueueBenchmark.testLinkedTransferQueueUsingTransfer  avgt    9  1687.000 ± 496.429  ns/op
 ```
-
-## todo
-
-Investigate SingleConsumerQueue performance to match LinkedTransferQueue, it is still about 50% slower (less than 25 nanos per op difference)

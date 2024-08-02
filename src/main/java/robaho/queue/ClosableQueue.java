@@ -1,9 +1,8 @@
 package robaho.queue;
 
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -12,54 +11,101 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see java.util.Queue
  */
 public class ClosableQueue<T> extends AbstractClosableQueue<T> {
-    private final Lock lock = new ReentrantLock();
-    private final Condition condition = lock.newCondition();
-    private boolean closed;
-    protected final LinkedList<T> list = new LinkedList();
+    /** Lock held by take, poll, etc */
+    private final ReentrantLock takeLock = new ReentrantLock();
+    /** Wait queue for waiting takes */
+    private final Condition notEmpty = takeLock.newCondition();
+    /** Lock held by put, offer, etc */
+    private final ReentrantLock putLock = new ReentrantLock();
+
+    private static class Node<T> {
+        Node<T> next;
+        T element;
+        private Node(T e) {
+            element=e;
+        }
+    }
+    private static final Node CLOSED = new Node(null);
+    private Node<T> head = new Node(null);
+    private Node<T> tail = head;
+    /** Current number of elements */
+    private final AtomicInteger count = new AtomicInteger();
+
+        /**
+     * Links node at end of queue.
+     *
+     * @param node the node
+     */
+    private void enqueue(Node<T> node) {
+        // assert putLock.isHeldByCurrentThread();
+        // assert last.next == null;
+        tail = tail.next = node;
+    }
+
+    /**
+     * Removes a node from head of queue.
+     *
+     * @return the node
+     */
+    private T dequeue() {
+        // assert takeLock.isHeldByCurrentThread();
+        // assert head.item == null;
+        Node<T> h = head;
+        Node<T> first = h.next;
+        h.next = h; // help GC
+        head = first;
+        T x = first.element;
+        first.element = null;
+        return x;
+    }
+
 
     @Override
     public void close() {
-        lock.lock();
+        putLock.lock();
         try {
-            closed=true;
-            condition.signalAll();
+            enqueue(CLOSED);
+            count.incrementAndGet();
         } finally {
-            lock.unlock();
+            putLock.unlock();
         }
-    }
-    /**
-     * check if queue is closed and if so throw QueueClosedException
-     */
-    protected void checkClosed() {
-        if(closed) throw new QueueClosedException();
+        signalNotEmpty();
     }
     /**
      * Add an element to the queue.
      * @throws QueueClosedException if the queue is closed.
      */
     public void put(T e) {
-        lock.lock();
+        int c;
+        putLock.lock();
         try {
-            checkClosed();
-            list.add(e);
-            condition.signal();
+            if(tail==CLOSED) throw new QueueClosedException();
+            tail=tail.next=new Node(e);
+            c = count.getAndIncrement();
         } finally {
-            lock.unlock();
+            putLock.unlock();
         }
+        if(c==0) signalNotEmpty();
     }
     /**
      * Add all elements from a Collection to the queue.
      * @throws QueueClosedException if the queue is closed.
      */
-    public void putAll(Collection<? extends T> c) {
-        lock.lock();
+    public void putAll(Collection<? extends T> collection) {
+        int c;
+        putLock.lock();
         try {
-            checkClosed();
-            list.addAll(c);
-            if(c.size()>1) condition.signalAll(); else condition.signal();
+            if(tail==CLOSED) throw new QueueClosedException();
+            int n=0;
+            for(var e : collection) {
+                enqueue(new Node(e));
+                n++;
+            }
+            c = count.getAndAdd(n);
         } finally {
-            lock.unlock();
+            putLock.unlock();
         }
+        if(c==0) signalNotEmpty();
     }
     /**
      * Remove earliest element from the queue and return it.
@@ -67,12 +113,15 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
      * @throws QueueClosedException if the queue is closed.
      */
     public T poll() {
-        lock.lock();
+        takeLock.lock();
         try {
-            checkClosed();
-            return list.poll();
+            if(head.next==CLOSED) throw new QueueClosedException();
+            if(count.get()==0) return null;
+            T e = dequeue();
+            count.decrementAndGet();
+            return e;
         } finally {
-            lock.unlock();
+            takeLock.unlock();
         }
     }
     /**
@@ -81,12 +130,13 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
      * @throws QueueClosedException if the queue is closed.
      */
     public T peek() {
-        lock.lock();
+        if (count.get() == 0)
+            return null;
+        takeLock.lock();
         try {
-            checkClosed();
-            return list.peek();
+            return (count.get() > 0) ? head.next.element : null;
         } finally {
-            lock.unlock();
+            takeLock.unlock();
         }
     }
 
@@ -97,16 +147,19 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
      * @throws QueueClosedException if the queue is closed.
      */
     public int drainTo(Collection<? super T> c, int maxElements) {
-        lock.lock();
+        takeLock.lock();
         try {
-            checkClosed();
-            int count=0;
-            for(T e;(e=list.poll())!=null && count < maxElements;count++) {
-                c.add(e);
+            int n = 0;
+            while(n<maxElements && count.get()>0) {
+                if(head.next==CLOSED) break;
+                c.add(dequeue());
+                n++;
+                count.decrementAndGet();
             }
-            return count;
+            if(head==CLOSED && n==0) throw new QueueClosedException();
+            return n;
         } finally {
-            lock.unlock();
+            takeLock.unlock();
         }
     }
 
@@ -118,22 +171,20 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
      */
     @Override
     public int drainToBlocking(Collection<? super T> c) throws InterruptedException {
-        lock.lock();
+        takeLock.lock();
         try {
-            while (true) { 
-                checkClosed();
-                if(list.isEmpty()) {
-                    condition.await();
-                } else {
-                    int count=0;
-                    for(T e;(e=list.poll())!=null;count++) {
-                        c.add(e);
-                    }
-                    return count;
-                }
+            int n=0;
+            while(count.get()==0) notEmpty.await();
+            while(count.get()>0) {
+                if(head.next==CLOSED) break;
+                c.add(dequeue());
+                n++;
+                count.decrementAndGet();
             }
+            if(head==CLOSED && n==0) throw new QueueClosedException();
+            return n;
         } finally {
-            lock.unlock();
+            takeLock.unlock();
         }
     }
 
@@ -145,16 +196,24 @@ public class ClosableQueue<T> extends AbstractClosableQueue<T> {
      */
     @Override
     public T take() throws InterruptedException {
-        lock.lock();
+        takeLock.lock();
         try {
-            while(true) {
-                T t = list.poll();
-                if(t!=null) return t;
-                checkClosed();
-                condition.await();
-            }
+            while(count.get()==0) notEmpty.await();
+            if(head.next==CLOSED) throw new QueueClosedException();
+            T e = dequeue();
+            count.getAndDecrement();
+            return e;
         } finally {
-            lock.unlock();
+            takeLock.unlock();
+        }
+    }
+
+    private void signalNotEmpty() {
+        takeLock.lock();
+        try {
+            notEmpty.signalAll();
+        } finally {
+            takeLock.unlock();
         }
     }
 }
