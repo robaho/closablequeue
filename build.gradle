@@ -24,6 +24,8 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+    withSourcesJar()
+    withJavadocJar()
 }
 
 tasks.named('test') {
@@ -36,9 +38,6 @@ jmh {
     // includes = [ "testClosableQueue" ]
 }
 
-group = 'robaho.queue'
-version = '1.0.8'
-
 publish {
     dependsOn test
 }
@@ -48,6 +47,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'io.github.robaho'
             artifactId = 'closablequeue'
+            version = '1.0.8'
 
             from components.java
 
