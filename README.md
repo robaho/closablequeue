@@ -4,7 +4,7 @@ It is designed to be used with try-with-resources and ephemeral virtual threads 
 
 It only supports some of the Queue interface methods, so it is not a drop-in replacement, but most of ommitted methods are probably not useful in a high-volume VT environment.
 
-TODO: use read/write lock to improve the concurrency between readers and writers
+TODO: use read/write lock to improve the concurrency between readers and writers when not using SingleConsumerQueue
 
 TODO: possibly implement the rest of the BlockingQueue interface methods to make it a drop-in replacement.
 
